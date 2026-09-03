@@ -50,6 +50,7 @@
   var elModalOverlay = document.getElementById('modal-overlay');
   var elModalBox = document.getElementById('modal-box');
   var elToast = document.getElementById('toast');
+  var elImportInput = document.getElementById('import-file-input');
 
   /* ---------- Utilidades ---------- */
   function escapeHtml(str){
@@ -239,27 +240,93 @@
     elBreadcrumb.innerHTML = '';
 
     var courses = state.data.courses;
-    if(courses.length === 0){
-      elMain.innerHTML = emptyState('📚', 'No tenés cursos todavía', 'Tocá el botón "+" para crear tu primer curso.');
-      return;
-    }
+    var listHtml = courses.length === 0
+      ? emptyState('📚', 'No tenés cursos todavía', 'Tocá el botón "+" para crear tu primer curso.')
+      : '<div class="card-list">' + courses.map(function(c){
+          return '<div class="card" data-id="' + c.id + '">' +
+            '<div class="card-body" data-action="open">' +
+              '<div class="card-title">' + escapeHtml(c.name) + '</div>' +
+              '<div class="card-sub">' + c.subjects.length + ' materia' + (c.subjects.length === 1 ? '' : 's') + '</div>' +
+            '</div>' +
+            '<button class="card-menu" data-action="menu" aria-label="Opciones">&#8942;</button>' +
+          '</div>';
+        }).join('') + '</div>';
 
-    elMain.innerHTML = '<div class="card-list">' + courses.map(function(c){
-      return '<div class="card" data-id="' + c.id + '">' +
-        '<div class="card-body" data-action="open">' +
-          '<div class="card-title">' + escapeHtml(c.name) + '</div>' +
-          '<div class="card-sub">' + c.subjects.length + ' materia' + (c.subjects.length === 1 ? '' : 's') + '</div>' +
-        '</div>' +
-        '<button class="card-menu" data-action="menu" aria-label="Opciones">&#8942;</button>' +
-      '</div>';
-    }).join('') + '</div>';
+    elMain.innerHTML = listHtml + backupSectionHtml();
 
     elMain.querySelectorAll('.card').forEach(function(cardEl){
       var course = getCourse(cardEl.dataset.id);
       cardEl.querySelector('[data-action="open"]').addEventListener('click', function(){ goToSubjects(course.id); });
       cardEl.querySelector('[data-action="menu"]').addEventListener('click', function(e){ e.stopPropagation(); handleCourseMenu(course); });
     });
+
+    bindBackupSection();
   }
+
+  /* ---------- Backup: exportar / importar ---------- */
+  function backupSectionHtml(){
+    return '<div class="backup-section">' +
+      '<p class="backup-hint">Los datos se guardan solo en este celular. Hacé un backup para no perderlos.</p>' +
+      '<button type="button" class="btn-outline" id="btn-export-data">Exportar datos (backup)</button>' +
+      '<button type="button" class="btn-outline" id="btn-import-data">Importar datos</button>' +
+    '</div>';
+  }
+
+  function bindBackupSection(){
+    var btnExport = document.getElementById('btn-export-data');
+    var btnImport = document.getElementById('btn-import-data');
+    if(btnExport) btnExport.addEventListener('click', handleExportData);
+    if(btnImport) btnImport.addEventListener('click', function(){ elImportInput.click(); });
+  }
+
+  function handleExportData(){
+    var json = JSON.stringify(state.data, null, 2);
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var stamp = new Date().toISOString().slice(0, 10);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'calificador-backup-' + stamp + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    showToast('Backup descargado');
+  }
+
+  elImportInput.addEventListener('change', function(){
+    var file = elImportInput.files[0];
+    elImportInput.value = '';
+    if(!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function(){
+      var parsed;
+      try{
+        parsed = JSON.parse(reader.result);
+      }catch(e){
+        showToast('El archivo no es un backup válido');
+        return;
+      }
+      if(!parsed || !Array.isArray(parsed.courses)){
+        showToast('El archivo no es un backup válido');
+        return;
+      }
+      confirmAction({
+        title: 'Importar datos',
+        message: 'Esto va a reemplazar <strong>todos</strong> los cursos, materias, estudiantes y notas actuales por los del archivo. ¿Continuar?',
+        confirmText: 'Reemplazar',
+        onConfirm: function(){
+          state.data = parsed;
+          saveData();
+          goToCourses();
+          showToast('Datos importados correctamente');
+        }
+      });
+    };
+    reader.onerror = function(){ showToast('No se pudo leer el archivo'); };
+    reader.readAsText(file);
+  });
 
   /* ---------- Materias ---------- */
   function handleAddSubject(){

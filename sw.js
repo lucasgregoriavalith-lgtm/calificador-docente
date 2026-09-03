@@ -1,4 +1,4 @@
-var CACHE_NAME = 'calificador-docente-v2';
+var CACHE_NAME = 'calificador-docente-v3';
 var ASSETS = [
   './',
   './index.html',

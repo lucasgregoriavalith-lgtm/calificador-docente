@@ -329,3 +329,31 @@ button{font-family:inherit;}
   cursor:pointer;
 }
 .fab-add-student:active{background:var(--color-primary-dark);}
+
+/* Backup / exportar-importar */
+.backup-section{
+  margin-top:28px;
+  padding-top:20px;
+  border-top:1px solid var(--color-border);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.backup-hint{
+  font-size:.8rem;
+  color:var(--color-text-muted);
+  margin:-2px 0 4px 0;
+}
+.btn-outline{
+  width:100%;
+  min-height:46px;
+  padding:12px;
+  background:transparent;
+  border:1.5px solid var(--color-border);
+  border-radius:var(--radius-sm);
+  color:var(--color-text-muted);
+  font-size:.95rem;
+  font-weight:600;
+  cursor:pointer;
+}
+.btn-outline:active{background:var(--color-bg);}

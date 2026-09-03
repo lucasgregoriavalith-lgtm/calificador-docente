@@ -152,6 +152,7 @@ button{font-family:inherit;}
   transition:opacity .18s ease;
 }
 .modal-overlay.show{opacity:1;}
+.modal-overlay[hidden]{display:none;}
 
 .modal-box{
   width:100%;
